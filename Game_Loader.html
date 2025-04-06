@@ -405,7 +405,7 @@
             <li onclick="custom('https://www.azaleasdolls.com/')">Azaleas Dolls</li>
             <li onclick="custom('https://www.dolldivine.com/dress-up/princess-dress-up-games')">Princess Dress-Up Games
             </li>
-            <li onclick="custom('https://www.jigsawexplorer.com/')">JigSaw Explorer</li>
+            <li onclick="custom('https://www.jigsawexplorer.com/', proxy=true)">JigSaw Explorer</li>
         </ul>
         <!--         <li onclick="custom('')"></li> -->
         <!--        <li onclick="custom('link.html')">Custom</li> -->
@@ -420,16 +420,20 @@
         var srcCode;
 
 
-        async function custom(link) {
+        async function custom(link, proxy=false) {
 
             if (link.includes('//')) {
-                // document.getElementById("movie").src = link;
+                document.getElementById("movie").src = link;
+                if (proxy == true) {
                 await grabSource(link)
                 srcCode.then(
                     function (value) { document.getElementById("movie").srcdoc = value; }
                 )
+                } else {
+                    document.getElementById("movie").src = link;
+                    iframe.removeAttribute('srcdoc');
+                }
             } else {
-                //                console.log(err);
                 document.getElementById("movie").src = 'https://fjf64.github.io/knell/' + link;
             }
         }
@@ -556,29 +560,45 @@
         input.focus();
         input.select();
 
-
         async function grabSource(link = 'aa') {
-            var sendingItem = { newURL: link }
-            await fetch('http://127.0.0.1:3000/game',
-                {
-                    method: 'POST',
-                    // headers: {
-                        // 'Content-Type': 'application/json; charset=utf-8'
-                    // },
-                    body: JSON.stringify(sendingItem),
-                })
-                .then((response) => {
-                    // await fetch('http://localho.st:3000/game').then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error: ${response.status}`);
-                    }
-                    // return "good";
-                    // return response.text()
-                    // console.log(response.text())
-                    srcCode = response.text()
-                    // return response.text();
-                })
+            var formData = JSON.stringify({ newUrl: link })
+            await fetch("http://localhost:3000/game", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: formData,
+            }).then((response) => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error: ${response.status}`);
+                        }
+                        // console.log(response.text())
+                        srcCode = response.text()
+                    })
         }
+
+        //     async function grabSource(link = 'aa') {
+        //         var sendingItem = { newURL: link }
+        //         await fetch('http://127.0.0.1:3000/game',
+        //             {
+        //                 method: 'POST',
+        //                 // headers: {
+        //                 // 'Content-Type': 'application/json; charset=utf-8'
+        //                 // },
+        //                 body: JSON.stringify(sendingItem),
+        //             })
+        //             .then((response) => {
+        //                 // await fetch('http://localho.st:3000/game').then((response) => {
+        //                 if (!response.ok) {
+        //                     throw new Error(`HTTP error: ${response.status}`);
+        //                 }
+        //                 // return "good";
+        //                 // return response.text()
+        //                 // console.log(response.text())
+                        
+        //                 // return response.text();
+        //             })
+        //     }
         // grabSource()
 
     </script>
