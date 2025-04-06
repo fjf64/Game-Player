@@ -176,8 +176,8 @@
     <div id="game">
         <object width="100%" height="100%">
             <!--<param name="movie" value="a">-->
-            <embed id="movie" src="" width="100%" height="100%">
-            </embed>
+            <iframe id="movie" src="" width="100%" height="100%">
+            </iframe>
         </object>
 
 
@@ -250,7 +250,9 @@
             <!--<li onclick="custom('download-ram.html')">Download Simulator</li>  -->
             <li onclick="custom('knight.html')">Progress Knight</li>
             <li onclick="custom('fast_p_knight.html')">Fast Progress Knight Quest</li>
-            <li onclick="custom('tree.html')">Incremental Skill Tree</li>
+            <li
+                onclick="custom('https://html-classic.itch.zone/html/3776686/IncrementalSkillTreeV1.1/index.html?v=1732313769')">
+                Incremental Skill Tree</li>
             <li onclick="custom('coffee.html')">Coffee Drinker</li>
             <li onclick="custom('dataminer.html')">Dataminer</li>
             <li onclick="custom('idle_invaders.html')">Idle Invaders</li>
@@ -415,12 +417,17 @@
     </div>
 
     <script>
-        function custom(link) {
+        var srcCode;
+
+
+        async function custom(link) {
 
             if (link.includes('//')) {
-                document.getElementById("movie").src = link;
-                console.log(axios.get(link))
-                console.log(document.getElementById("movie").contentWindow.document)
+                // document.getElementById("movie").src = link;
+                await grabSource(link)
+                srcCode.then(
+                    function (value) { document.getElementById("movie").srcdoc = value; }
+                )
             } else {
                 //                console.log(err);
                 document.getElementById("movie").src = 'https://fjf64.github.io/knell/' + link;
@@ -550,23 +557,29 @@
         input.select();
 
 
-        // app.get('/game',(req,res)=>{
-    // res.json(colors)
-// })
-
-fetch('http://localho.st:3000/game')
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-    return response.text();
-  })
-  .then((text) => {
-    console.log(text);
-  })
-  .catch((error) => {
-    console.log(`Could not fetch verse: ${error}`);
-  });
+        async function grabSource(link = 'aa') {
+            var sendingItem = { newURL: link }
+            await fetch('http://127.0.0.1:3000/game',
+                {
+                    method: 'POST',
+                    // headers: {
+                        // 'Content-Type': 'application/json; charset=utf-8'
+                    // },
+                    body: JSON.stringify(sendingItem),
+                })
+                .then((response) => {
+                    // await fetch('http://localho.st:3000/game').then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    // return "good";
+                    // return response.text()
+                    // console.log(response.text())
+                    srcCode = response.text()
+                    // return response.text();
+                })
+        }
+        // grabSource()
 
     </script>
 </body>
