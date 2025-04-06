@@ -418,17 +418,21 @@
 
     <script>
         var srcCode;
+        var currentHref = ''
 
 
-        async function custom(link, proxy=false) {
-
+        async function custom(link, proxy = false, rewriteHref = true) {
+            if (rewriteHref == true) {
+                currentHref = link
+            }
             if (link.includes('//')) {
                 document.getElementById("movie").src = link;
                 if (proxy == true) {
-                await grabSource(link)
-                srcCode.then(
-                    function (value) { document.getElementById("movie").srcdoc = value; }
-                )
+                    await grabSource(link)
+                    document.getElementById("movie").srcdoc = replaceBlankLinksWithOnclick(srcCode, 'custom', currentHref);
+                    // srcCode.then(
+                    //     function (value) { document.getElementById("movie").srcdoc = replaceBlankLinksWithOnclick(value, 'custom', currentHref); }
+                    // )
                 } else {
                     document.getElementById("movie").src = link;
                     iframe.removeAttribute('srcdoc');
@@ -539,23 +543,6 @@
                 scrollLockToggle = false
             }
         }
-        //
-        // $(document).ready(function () {
-        // 
-        // $(document).bind('keypress', function (event) {
-        // 
-        // if (lastkeypress == 102 && event.which === 57) {
-        // scrollLock();
-        // }
-        // lastkeypress = event.which;
-        // });
-
-        // });
-        //let updateIntervalId_a = setInterval(refresh, 1000);
-        //const backWhiteList = ['https://www.dolldivine.com/dress-up/princess-dress-up-games', 'https://www.azaleasdolls.com/']
-        //if (backWhiteList.includes(link)) {
-        //    document.getElementById('backButton').style.display = 'inline-block';
-        //}
         var input = document.getElementById('search');
         input.focus();
         input.select();
@@ -565,41 +552,47 @@
             await fetch("http://localhost:3000/game", {
                 method: "POST",
                 headers: {
-                "Content-Type": "application/json"
+                    "Content-Type": "application/json"
                 },
                 body: formData,
-            }).then((response) => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error: ${response.status}`);
-                        }
-                        // console.log(response.text())
-                        srcCode = response.text()
-                    })
+            }).then(async (response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+                // console.log(response.text())
+                srcCode = await response.text()
+
+            })
         }
 
-        //     async function grabSource(link = 'aa') {
-        //         var sendingItem = { newURL: link }
-        //         await fetch('http://127.0.0.1:3000/game',
-        //             {
-        //                 method: 'POST',
-        //                 // headers: {
-        //                 // 'Content-Type': 'application/json; charset=utf-8'
-        //                 // },
-        //                 body: JSON.stringify(sendingItem),
-        //             })
-        //             .then((response) => {
-        //                 // await fetch('http://localho.st:3000/game').then((response) => {
-        //                 if (!response.ok) {
-        //                     throw new Error(`HTTP error: ${response.status}`);
-        //                 }
-        //                 // return "good";
-        //                 // return response.text()
-        //                 // console.log(response.text())
-                        
-        //                 // return response.text();
-        //             })
-        //     }
-        // grabSource()
+        function replaceBlankLinksWithOnclick(htmlString, functionName, baseUrl) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+
+            // const links = doc.querySelectorAll('a[target="_blank"]');
+            const links = doc.querySelectorAll('a[href]');
+
+            links.forEach(link => {
+                let href = link.getAttribute('href');
+
+                // Skip if no href (just in case)
+                if (!href) return;
+
+                // Convert to absolute URL using the base URL
+                const absoluteUrl = new URL(href, baseUrl).href;
+
+                // Escape for use in an inline JS string
+                const escapedUrl = absoluteUrl.replace(/'/g, "\\'");
+
+                // Replace target and href
+                link.removeAttribute('target');
+                link.setAttribute('href', '#');
+                link.setAttribute('onclick', `${functionName}('${escapedUrl}', rewriteHref=false, proxy=true)`);
+            });
+
+            return doc.body.innerHTML;
+        }
+
 
     </script>
 </body>
