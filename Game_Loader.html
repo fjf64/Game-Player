@@ -418,31 +418,65 @@
 
     <script>
         var srcCode;
-        var currentHref = ''
+        var currentHref;
+
+        window.addEventListener('message', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'customNavigate') {
+                    console.log('[iframe message]', data);
+                    custom(data.url, data.proxy, data.rewriteHref);
+                }
+            } catch (e) {
+                console.error('Failed to handle message from iframe:', e);
+            }
+        });
 
 
         async function custom(link, proxy = false, rewriteHref = true) {
             if (rewriteHref == true) {
                 currentHref = link
             }
+            console.log('running custom')
             if (link.includes('//') || proxy == true) {
-                console.log('grabbing')
                 document.getElementById("movie").src = link;
                 if (proxy == true) {
+                    console.log(currentHref)
                     await grabSource(link)
-                    console.log(replaceBlankLinksWithOnclick(srcCode, 'custom', currentHref))
-                    document.getElementById("movie").srcdoc = replaceBlankLinksWithOnclick(srcCode, 'custom', currentHref);
-                    // srcCode.then(
-                    //     function (value) { document.getElementById("movie").srcdoc = replaceBlankLinksWithOnclick(value, 'custom', currentHref); }
-                    // )
+                    document.getElementById("movie").srcdoc = await replaceBlankLinksWithPostMessage(srcCode,currentHref);
+                    document.getElementById("movie").removeAttribute('src');
                 } else {
-                    document.getElementById("movie").src = link;
-                    iframe.removeAttribute('srcdoc');
+                    document.getElementById("movie").srcdoc.removeAttribute('srcdoc');
                 }
             } else {
                 document.getElementById("movie").src = 'https://fjf64.github.io/knell/' + link;
             }
         }
+        // async function custom(link, proxy = false, rewriteHref = true) {
+        //     if (rewriteHref == true) {
+        //         currentHref = link;
+        //     }
+
+        //     const iframe = document.getElementById("movie");
+
+        //     if (link.includes('//') || proxy == true) {
+        //         if (proxy == true) {
+        //             console.log('grabbing', link);
+        //             await grabSource(link); // sets `srcCode`
+
+        //             const processed = replaceBlankLinksWithPostMessage(srcCode, currentHref);
+        //             iframe.removeAttribute('src'); // remove direct src to avoid conflicts
+        //             iframe.srcdoc = processed;
+        //         } else {
+        //             iframe.src = link;
+        //             iframe.removeAttribute('srcdoc');
+        //         }
+        //     } else {
+        //         iframe.src = 'https://fjf64.github.io/knell/' + link;
+        //     }
+        // }
+
+
 
         function openlink(link) {
             window.open(link, "_blank");
@@ -567,33 +601,39 @@
             })
         }
 
-        function replaceBlankLinksWithOnclick(htmlString, functionName, baseUrl) {
+        function replaceBlankLinksWithPostMessage(htmlString, baseUrl) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlString, 'text/html');
 
-            // const links = doc.querySelectorAll('a[target="_blank"]');
-            const links = doc.querySelectorAll('a[target="_blank"][href]');
+            const links = doc.querySelectorAll('a[href]');
+            // const links = doc.querySelectorAll('a[target="_blank"][href]');
 
             links.forEach(link => {
                 let href = link.getAttribute('href');
-
-                // Skip if no href (just in case)
                 if (!href) return;
 
-                // Convert to absolute URL using the base URL
                 const absoluteUrl = new URL(href, baseUrl).href;
 
-                // Escape for use in an inline JS string
-                const escapedUrl = absoluteUrl.replace(/'/g, "\\'");
+                // Build the message
+                const message = {
+                    type: 'customNavigate',
+                    url: absoluteUrl,
+                    rewriteHref: false,
+                    proxy: true
+                };
 
-                // Replace target and href
                 link.removeAttribute('target');
                 link.setAttribute('href', '#');
-                link.setAttribute('onclick', `${functionName}('${escapedUrl}', rewriteHref=false, proxy=true)`);
+                console.log(absoluteUrl)
+                // Send to top-level window so it always reaches your listener
+                const escapedMessage = JSON.stringify(message).replace(/"/g, '&quot;');
+                link.setAttribute('onclick', `window.top.postMessage(JSON.parse("${escapedMessage}"), '*');`);
+                // link.setAttribute('onclick', `window.top.postMessage(${JSON.stringify(message)}, '*');`);
             });
 
-            return doc.documentElement.outerHTML;;
+            return doc.documentElement.outerHTML;
         }
+
 
 
     </script>
