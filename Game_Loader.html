@@ -425,10 +425,12 @@
             if (rewriteHref == true) {
                 currentHref = link
             }
-            if (link.includes('//')) {
+            if (link.includes('//') || proxy == true) {
+                console.log('grabbing')
                 document.getElementById("movie").src = link;
                 if (proxy == true) {
                     await grabSource(link)
+                    console.log(replaceBlankLinksWithOnclick(srcCode, 'custom', currentHref))
                     document.getElementById("movie").srcdoc = replaceBlankLinksWithOnclick(srcCode, 'custom', currentHref);
                     // srcCode.then(
                     //     function (value) { document.getElementById("movie").srcdoc = replaceBlankLinksWithOnclick(value, 'custom', currentHref); }
@@ -570,7 +572,7 @@
             const doc = parser.parseFromString(htmlString, 'text/html');
 
             // const links = doc.querySelectorAll('a[target="_blank"]');
-            const links = doc.querySelectorAll('a[href]');
+            const links = doc.querySelectorAll('a[target="_blank"][href]');
 
             links.forEach(link => {
                 let href = link.getAttribute('href');
@@ -590,7 +592,7 @@
                 link.setAttribute('onclick', `${functionName}('${escapedUrl}', rewriteHref=false, proxy=true)`);
             });
 
-            return doc.body.innerHTML;
+            return doc.documentElement.outerHTML;;
         }
 
 
